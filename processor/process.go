@@ -1,6 +1,7 @@
 package processor
 
 type Processor interface {
-    GetWorkout() error
-	GetRetry() error
+	CreateClient() error
+	GetWorkout(prompt string) error
+	// GetRetry() error
 }
