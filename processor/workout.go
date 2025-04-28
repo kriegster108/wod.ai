@@ -9,6 +9,11 @@ import (
 	"github.com/sashabaranov/go-openai/jsonschema"
 )
 
+type WorkoutClient interface {
+	CreateClient() error
+	GenerateWorkout(prompt string) (*openai.ChatCompletionResponse, error)
+}
+
 type Exercise struct {
 	Name          string `json:"name"`
 	Duration      string `json:"duration"`
@@ -34,12 +39,11 @@ type WorkoutPlan struct {
 	} `json:"workout"`
 }
 
-type OpenAIChatResult struct {
-	client   *openai.Client
-	response openai.ChatCompletionResponse
+type OpenAIChatClient struct {
+	client *openai.Client
 }
 
-func (workout *OpenAIChatResult) CreateClient() error {
+func (workout *OpenAIChatClient) CreateClient() error {
 	workout.client = openai.NewClient(os.Getenv("API_KEY"))
 	return nil
 }
@@ -56,11 +60,11 @@ func generateSchema() (*jsonschema.Definition, error) {
 	return schema, nil
 }
 
-func (workout *OpenAIChatResult) GenerateWorkout(prompt string) error {
+func (workout *OpenAIChatClient) GenerateWorkout(prompt string) (*openai.ChatCompletionResponse, error) {
 	schema, err := generateSchema()
 	if err != nil {
 		fmt.Printf("Invalid Schema %v\n", err)
-		return err
+		return nil, err
 	}
 
 	resp, err := workout.client.CreateChatCompletion(
@@ -90,10 +94,7 @@ func (workout *OpenAIChatResult) GenerateWorkout(prompt string) error {
 
 	if err != nil {
 		fmt.Printf("ChatCompletion error: %v\n", err)
-		return err
+		return nil, err
 	}
-
-	fmt.Println(resp.Choices[0].Message.Content)
-	workout.response = resp
-	return nil
+	return &resp, nil
 }
